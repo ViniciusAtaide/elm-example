@@ -1,36 +1,11 @@
 {
-  "posts": [
-    {
-      "id": 0,
-      "title": "5 Dicas para organizar e decorar a sua casa",
-      "date_published": "23.02.2020",
-      "tags": ["LifeStyle"],
-      "image": "pancake.jpg",
-      "image_desc": "panqueca"
-    },
-    {
-      "id": 1,
-      "title": "Era uma vez",
-      "date_published": "25.08.2020",
-      "tags": ["Teste"],
-      "image": "photo2.jpeg",
-      "image_desc": "Era uma vez"
-    },
-    {
-      "id": 2,
-      "title": "Era uma vez",
-      "date_published": "25.08.2020",
-      "tags": ["Teste"],
-      "image": "photo2.jpeg",
-      "image_desc": "Era uma vez"
-    },
-    {
-      "id": 3,
-      "title": "Era uma vez",
-      "date_published": "25.08.2020",
-      "tags": ["Teste"],
-      "image": "photo2.jpeg",
-      "image_desc": "Era uma vez"
-    }
-  ]
+  "mainPost": {
+    "id": 0,
+    "title": "5 Dicas para organizar e decorar a sua casa",
+    "date_published": "23.02.2020",
+    "tags": ["LifeStyle"],
+    "image": "pancake.jpg",
+    "image_desc": "panqueca"
+  },
+  "posts": []
 }

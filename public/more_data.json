@@ -1,0 +1,28 @@
+{
+  "posts": [
+    {
+      "id": 1,
+      "title": "Era uma vez",
+      "date_published": "25.08.2020",
+      "tags": ["Teste"],
+      "image": "photo.jpeg",
+      "image_desc": "yooo"
+    },
+    {
+      "id": 2,
+      "title": "Era uma vez",
+      "date_published": "25.08.2020",
+      "tags": ["Teste"],
+      "image": "photo.jpeg",
+      "image_desc": "Yamete"
+    },
+    {
+      "id": 3,
+      "title": "Era uma vez",
+      "date_published": "25.08.2020",
+      "tags": ["Teste"],
+      "image": "photo2.jpeg",
+      "image_desc": "Korewa"
+    }
+  ]
+}

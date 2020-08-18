@@ -1,7 +1,7 @@
-module Decoders exposing (..)
+module Decoders exposing (initDecoder, postsDecoder)
 
-import Json.Decode as Decode exposing (Decoder)
-import Types exposing (Post, State)
+import Json.Decode as Decode exposing (Decoder, field)
+import Types exposing (FetchModel, Post, RemoteData(..))
 
 
 postDecoder : Decoder Post
@@ -14,13 +14,13 @@ postDecoder =
         (Decode.field "image" Decode.string)
         (Decode.field "image_desc" Decode.string)
 
-
 postsDecoder : Decoder (List Post)
 postsDecoder =
     Decode.field "posts"
         (Decode.list postDecoder)
 
-
-stateDecoder : Decoder State
-stateDecoder =
-    Decode.map State postsDecoder
+initDecoder : Decoder FetchModel
+initDecoder =
+    Decode.map2 FetchModel
+        (Decode.field "mainPost" postDecoder)
+        postsDecoder

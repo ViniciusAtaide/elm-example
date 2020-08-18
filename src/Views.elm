@@ -3,12 +3,12 @@ module Views exposing (body, borderButton, edges, footer, header, license)
 import Element exposing (..)
 import Element.Background as EB
 import Element.Border as B
-import Element.Events as EE
+import Element.Events exposing (onClick)
 import Element.Font as EF
 import Element.Input as EI
-import Html as H
-import Html.Attributes as HA
-import Types exposing (Model(..), Msg(..), Post, State)
+import Html
+import Html.Attributes as Attributes
+import Types exposing (Model, Msg(..), Post, RemoteData(..))
 
 
 
@@ -17,6 +17,15 @@ import Types exposing (Model(..), Msg(..), Post, State)
 ---------------
 
 
+type alias Edge =
+    { top : Int
+    , right : Int
+    , bottom : Int
+    , left : Int
+    }
+
+
+edges : Edge
 edges =
     { top = 0
     , right = 0
@@ -35,42 +44,47 @@ borderButton =
     ]
 
 
+active : Color
 active =
     rgb255 159 115 167
+
+
+activeLink : String -> String -> Element msg
+activeLink url t =
+    link [ mouseOver [ EF.color active ] ] { url = url, label = text t }
 
 
 iconRede : String -> String -> String -> String -> Element msg
 iconRede href bp w img =
     el [ alignRight ] <|
         html <|
-            H.a
-                [ HA.href href
-                , HA.style "margin-left" "10px"
-                , HA.style "background-image" <| "url('" ++ img ++ "')"
-                , HA.style "background-repeat" "no-repeat"
-                , HA.style "background-size" "148px 22px"
-                , HA.style "height" "22px"
-                , HA.style "width" w
-                , HA.style "text-indent" "-9999px"
-                , HA.style "background-position" bp
+            Html.a
+                [ Attributes.href href
+                , Attributes.style "margin-left" "10px"
+                , Attributes.style "background-image" <| "url('" ++ img ++ "')"
+                , Attributes.style "background-repeat" "no-repeat"
+                , Attributes.style "background-size" "148px 22px"
+                , Attributes.style "height" "22px"
+                , Attributes.style "width" w
+                , Attributes.style "text-indent" "-9999px"
+                , Attributes.style "background-position" bp
                 ]
-                [ H.text "" ]
+                [ Html.text "" ]
 
 
 
 ----------------
 ----------------
-----------------
 
 
-post : Element msg
-post =
+post : Post -> Element msg
+post p =
     row [ spacing 30, width fill ]
         [ image
             [ width (fill |> maximum 240)
             , height (fill |> maximum 240)
             ]
-            { src = "images/photo.jpeg", description = "Rotina" }
+            { src = "images/" ++ p.image, description = p.image_desc }
         , column [ alignTop, width fill, spacing 10 ]
             [ row
                 [ paddingXY 0 10
@@ -83,13 +97,14 @@ post =
                     , EF.color active
                     , alignLeft
                     ]
-                    [ text "Lifestyle" ]
-                , el [ EF.size 12, EF.extraLight ] (text "22.07.2020")
+                  <|
+                    List.map text p.tags
+                , el [ EF.size 12, EF.extraLight ] (text p.date_published)
                 ]
-            , el [ width fill, EF.size 24 ] <| text "Vlog: minha rotina à noite"
+            , el [ width fill, EF.size 24 ] <| text p.title
             , paragraph
                 [ EF.extraLight, moveDown 20, EF.size 16 ]
-                [ text "Como tem sido as suas noites por aí? Por aqui eu tenho tentado me desligar do trabalho, fazer um comidinha[...]"
+                [ text p.image_desc
                 ]
             ]
         ]
@@ -118,7 +133,7 @@ miniPost p =
             { src = "images/" ++ p.image, description = p.image_desc }
         , row
             [ width fill ]
-            [ row [ EF.color active, EF.italic, EF.size 14 ] <| List.map (\t -> text t) p.tags
+            [ row [ EF.color active, EF.italic, EF.size 14 ] <| List.map text p.tags
             , el [ EF.size 12, alignRight ] <| text p.date_published
             ]
         , paragraph [ width fill, EF.size 22 ] [ text p.title ]
@@ -130,26 +145,10 @@ menu =
     row [ width fill, padding 10 ]
         [ row
             [ width fill, spacing 10 ]
-            [ link [ mouseOver [ EF.color active ] ]
-                { url = "#"
-                , label = text <| String.toUpper "Moda"
-                }
-            , link [ mouseOver [ EF.color active ] ]
-                { url = "#"
-                , label = text <| String.toUpper "Beleza"
-                }
-            , link [ mouseOver [ EF.color active ] ]
-                { url = "#"
-                , label = text <| String.toUpper "Viagem"
-                }
-            , link [ mouseOver [ EF.color active ] ]
-                { url = "#"
-                , label = text <| String.toUpper "Comida"
-                }
-            , link [ mouseOver [ EF.color active ] ]
-                { url = "#"
-                , label = text <| String.toUpper "Lifestyle"
-                }
+            [ activeLink "#" <| String.toUpper "Moda"
+            , activeLink "#" <| String.toUpper "Viagem"
+            , activeLink "#" <| String.toUpper "Comida"
+            , activeLink "#" <| String.toUpper "Lifestyle"
             ]
         , row
             [ width fill ]
@@ -186,85 +185,109 @@ header =
         ]
 
 
-body : Model -> Element msg
+body : Model -> Element Msg
 body model =
-    column [ spacing 50 ]
-        [ row [ width (fill |> minimum 1120), spacing 70 ]
+    column [ width fill, spacing 50 ]
+        [ row [ width fill, spacing 70 ]
             [ column [ width <| (fillPortion 8 |> maximum 800), height fill, alignTop, spacing 50 ] <|
-                case model of
+                case model.mainPost of
                     Loading ->
                         [ el [ centerX, centerY ] <| text "Abrindo..." ]
 
                     Failure ->
                         [ el [ centerX, centerY ] <| text "Deu merda..." ]
 
-                    Success state ->
-                        [ mainPost (Maybe.withDefault { id = 0, title = "", tags = [], date_published = "", image = "", image_desc = "" } (List.head state.posts)) ]
+                    Success m ->
+                        [ mainPost m
+                        ]
             , column [ width <| fillPortion 2, alignTop, spacing 50 ]
                 [ image [] { src = "images/skincare.jpg", description = "SkinCare" }
                 , image [] { src = "images/projeto-piloto.jpg", description = "Projeto Piloto" }
                 ]
             ]
-        , row
-            [ spacing 50, width fill ]
+        , column
+            [ spacing 50, width <| (fillPortion 8 |> maximum 800) ]
           <|
-            case model of
+            case model.posts of
                 Loading ->
                     [ el [ centerX, centerY ] <| text "Carregando..." ]
 
                 Failure ->
                     [ el [ centerX, centerY ] <| text "Deu errado..." ]
 
-                Success state ->
-                    List.map miniPost state.posts
+                Success posts ->
+                    List.map post posts
+        , row
+            [ spacing 50, width fill ]
+          <|
+            case model.posts of
+                Loading ->
+                    [ el [ centerX, centerY ] <| text "Carregando..." ]
+
+                Failure ->
+                    [ el [ centerX, centerY ] <| text "Deu errado..." ]
+
+                Success posts ->
+                    List.map miniPost posts
+        , el
+            [ centerX
+            , inFront (link [ centerX, moveDown 6, EF.color <| rgb 1 1 1 ] { url = "#", label = text "Carregar Mais" })
+            , onClick LoadMore
+            ]
+            (image
+                [ width <| px 200 ]
+                { src = "icons/carregar_mais.png", description = "Carregar Mais" }
+            )
         ]
 
 
 footer : Element Msg
 footer =
     row [ paddingXY 20 35, EB.color (rgb255 0 0 0), width fill, moveDown 20 ]
-        [ link [ width fill, alignTop ]
-            { url = "#", label = image [ alignLeft, width (fill |> maximum 145) ] { src = "icons/footer-logo.png", description = "logo" } }
-        , column
-            [ width fill, spacing 30 ]
-            [ row
-                [ EF.color (rgb 1 1 1), spacing 20, alignRight ]
-                [ link [ mouseOver [ EF.color active ] ] { url = "#", label = text "Sobre o CDG" }
-                , link [ mouseOver [ EF.color active ] ] { url = "#", label = text "Anuncie" }
-                , link [ mouseOver [ EF.color active ] ] { url = "#", label = text "Links" }
-                , link [ mouseOver [ EF.color active ] ] { url = "#", label = text "Arquivo" }
-                , link [ mouseOver [ EF.color active ] ] { url = "#", label = text "FAQ" }
-                , link [ mouseOver [ EF.color active ] ] { url = "#", label = text "Shop" }
-                ]
-            , row
-                [ width fill ]
-                [ EI.text
-                    [ EB.color (rgb 0 0 0)
-                    , B.rounded 0
-                    , EF.size 18
-                    , EF.color (rgb 1 1 1)
-                    , paddingEach { edges | left = 30, top = 5, bottom = 5 }
-                    , width <| px 260
-                    , inFront <|
-                        image [ width <| px 26, centerY ]
-                            { src = "icons/lupa.png"
-                            , description = "search"
-                            }
+        [ row [ centerX, width (fill |> maximum 1120) ]
+            [ link [ width fill, alignTop ]
+                { url = "#", label = image [ alignLeft, width (fill |> maximum 145) ] { src = "icons/footer-logo.png", description = "logo" } }
+            , column
+                [ width fill, spacing 30 ]
+                [ row
+                    [ EF.color (rgb 1 1 1), spacing 20, alignRight ]
+                    [ activeLink "#" "Sobre o CDG"
+                    , activeLink "#" "Anuncie"
+                    , activeLink "#" "Links"
+                    , activeLink "#" "Arquivo"
+                    , activeLink "#" "FAQ"
+                    , activeLink "#" "Shop"
                     ]
-                    { text = ""
-                    , label = EI.labelHidden ""
-                    , placeholder = Nothing
-                    , onChange = \_ -> NoOp
-                    }
                 , row
-                    [ alignRight ]
-                    [ iconRede "https://www.instagram.com/chatadegalocha/" "0" "23px" "icons/rodape-social.png"
-                    , iconRede "https://br.pinterest.com/chatadegalocha/" "-23px" "21px" "icons/rodape-social.png"
-                    , iconRede "https://www.youtube.com/user/blogchatadegalocha" "-45px" "27px" "icons/rodape-social.png"
-                    , iconRede "https://twitter.com/luferreira/" "-72px" "21px" "icons/rodape-social.png"
-                    , iconRede "https://chatadegalocha.tumblr.com/" "-93px" "11px" "icons/rodape-social.png"
-                    , iconRede "https://chatadegalocha.com/contato/" "-104px" "25px" "icons/rodape-social.png"
-                    , iconRede "https://feeds.feedburner.com/chatadegalocha/" "-131px" "17px" "icons/rodape-social.png"
+                    [ width fill ]
+                    [ EI.text
+                        [ EB.color (rgb 0 0 0)
+                        , B.rounded 0
+                        , EF.size 18
+                        , EF.color (rgb 1 1 1)
+                        , paddingEach { edges | left = 30, top = 5, bottom = 5 }
+                        , width <| px 260
+                        , inFront <|
+                            image [ width <| px 26, centerY ]
+                                { src = "icons/lupa.png"
+                                , description = "search"
+                                }
+                        ]
+                        { text = ""
+                        , label = EI.labelHidden ""
+                        , placeholder = Nothing
+                        , onChange = \_ -> NoOp
+                        }
+                    , row
+                        [ alignRight ]
+                        [ iconRede "https://www.instagram.com/chatadegalocha/" "0" "23px" "icons/rodape-social.png"
+                        , iconRede "https://br.pinterest.com/chatadegalocha/" "-23px" "21px" "icons/rodape-social.png"
+                        , iconRede "https://www.youtube.com/user/blogchatadegalocha" "-45px" "27px" "icons/rodape-social.png"
+                        , iconRede "https://twitter.com/luferreira/" "-72px" "21px" "icons/rodape-social.png"
+                        , iconRede "https://chatadegalocha.tumblr.com/" "-93px" "11px" "icons/rodape-social.png"
+                        , iconRede "https://chatadegalocha.com/contato/" "-104px" "25px" "icons/rodape-social.png"
+                        , iconRede "https://feeds.feedburner.com/chatadegalocha/" "-131px" "17px" "icons/rodape-social.png"
+                        ]
                     ]
                 ]
             ]
